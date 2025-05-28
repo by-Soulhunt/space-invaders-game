@@ -17,6 +17,9 @@ class SpaceInvadersGame:
         # Starship
         self.starship = Starship()
 
+        # Bullets
+        self.bullets = []
+
         # Alien
         self.list_of_alien = []
         self.all_aliens = []
@@ -31,20 +34,28 @@ class SpaceInvadersGame:
                          all_aliens=self.all_aliens)
 
 
-        # Player bullet
-        self.player_bullet = PlayerBullet()
-
         # Onkey function
         self.screen.listen()
         self.screen.onkeypress(self.starship.move_left, "Left")
         self.screen.onkeypress(self.starship.move_right, "Right")
-        self.screen.onkeypress(self.player_bullet_strike, "space")
+        self.screen.onkeypress(self.create_player_bullet, "space")
 
+        # Flag
         self.game_is_on = True
 
+    def create_player_bullet(self):
+        bullet = PlayerBullet(self.starship.xcor(), self.starship.ycor())
+        self.bullets.append(bullet)
+
     def player_bullet_strike(self):
-        self.player_bullet.sety((self.player_bullet.ycor() + 1))
-        self.screen.ontimer(self.player_bullet_strike,1)
+        for bullet in self.bullets:
+            bullet.showturtle()
+            bullet.bullet_move()
+            if bullet.ycor() > 450:
+                bullet.hideturtle()
+                self.bullets.remove(bullet)
+        self.screen.ontimer(self.player_bullet_strike, 30)
+
 
     def alien_move(self):
         dx = self.move_list[self.move_index]
@@ -60,8 +71,13 @@ class SpaceInvadersGame:
         self.screen.update()
         self.screen.ontimer(self.alien_move, 60)
 
+
+    def alien_destroy(self):
+        pass
+
     def run(self):
         self.alien_move()
+        self.player_bullet_strike()
         self.screen.mainloop()
 
 

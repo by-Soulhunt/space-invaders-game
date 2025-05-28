@@ -4,7 +4,7 @@ class Starship(Turtle):
 
     def __init__(self):
         super().__init__()
-        self.color("white")
+        self.color("green")
         self.left(90)
         self.penup()
         self.shapesize(3, 3)

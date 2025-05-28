@@ -5,7 +5,7 @@ class Alien(Turtle):
     def __init__(self):
         super().__init__()
         self.penup()
-        self.color("white")
+        self.color("orange")
         self.shapesize(3, 3)
         self.right(90)
 
