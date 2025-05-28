@@ -1,7 +1,9 @@
+import time
 from turtle import Screen
 from game_resources.starship import Starship
 from game_resources.aliens import Alien, create_all_alien
 from game_resources.player_bullet import PlayerBullet
+import os
 
 
 class SpaceInvadersGame:
@@ -28,6 +30,15 @@ class SpaceInvadersGame:
         self.move_list = [-1, -1, -1, -1, 1, 1, 1, 1]
         self.move_index = 0
 
+        # Explosion
+        explosion_path = os.path.join("game_resources", "img", "explosion.gif")
+        if os.path.exists(explosion_path):
+            self.screen.register_shape(explosion_path)
+        else:
+            print(f"File not found: {explosion_path}")
+
+        print(self.screen.getshapes())
+
         create_all_alien(alien_step=self.alien_step,
                          line_step=self.line_step,
                          list_of_alien=self.list_of_alien,
@@ -42,6 +53,7 @@ class SpaceInvadersGame:
 
         # Flag
         self.game_is_on = True
+
 
     def create_player_bullet(self):
         bullet = PlayerBullet(self.starship.xcor(), self.starship.ycor())
@@ -73,11 +85,24 @@ class SpaceInvadersGame:
 
 
     def alien_destroy(self):
-        pass
+        for bullet in self.bullets:
+            for row in self.all_aliens:
+                for alien in row:
+                    if bullet.distance(alien) < 10:
+                        self.bullets.remove(bullet)
+                        alien.shape("game_resources\\img\\explosion.gif")
+                        self.screen.update()
+                        alien.hideturtle()
+                        row.remove(alien)
+                        bullet.hideturtle()
+
+
+        self.screen.ontimer(self.alien_destroy, 1)
 
     def run(self):
         self.alien_move()
         self.player_bullet_strike()
+        self.alien_destroy()
         self.screen.mainloop()
 
 

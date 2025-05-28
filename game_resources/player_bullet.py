@@ -7,7 +7,7 @@ class PlayerBullet(Turtle):
         self.penup()
         self.color("white")
         self.shape("circle")
-        self.shapesize(1, 1)
+        self.shapesize(stretch_wid=0.3, stretch_len=1)
         self.hideturtle()
         self.goto(x, y)
         self.setheading(90)
