@@ -2,11 +2,12 @@ from turtle import Turtle
 
 class Starship(Turtle):
 
-    def __init__(self):
+    def __init__(self, starship_shape):
         super().__init__()
         self.color("green")
         self.left(90)
         self.penup()
+        self.shape(starship_shape)
         self.shapesize(3, 3)
         self.goto(0, -400)
 
