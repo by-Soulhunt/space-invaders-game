@@ -3,6 +3,7 @@ from game_resources.starship import Starship
 from game_resources.aliens import create_all_alien
 from game_resources.player_bullet import PlayerBullet
 from game_resources.alien_bullet import AlienBullet
+from game_resources.scoreboard import Scoreboard
 import random
 import os
 
@@ -28,6 +29,11 @@ class SpaceInvadersGame:
         else:
             print(f"Image not found.")
 
+
+        # Scoreboard
+        self.scoreboard = Scoreboard()
+        self.scoreboard.write_score()
+
         # Starship
         self.starship = Starship("game_resources\\img\\starship.gif")
 
@@ -35,23 +41,23 @@ class SpaceInvadersGame:
         self.bullets = []
         self.alien_bullets = []
         self.alien_bullets_delay = 10
-        self.alien_fighters_pull = [[0,0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [0, 7], [0, 8],
-                                    [0, 9], [0, 10], [0, 11]]
+        self.alien_fighters_pull = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
         # Alien
         self.list_of_alien = []
-        self.all_aliens = []
+        self.all_aliens_dict = {}
         self.alien_step = 5
         self.line_step = 0
         self.move_list = [-1, -1, -1, -1, 1, 1, 1, 1]
         self.move_index = 0
 
-        # Create all aliens
+
+
         create_all_alien(alien_step=self.alien_step,
-                         line_step=self.line_step,
-                         list_of_alien=self.list_of_alien,
-                         all_aliens=self.all_aliens,
-                         alien_shape="game_resources\\img\\alien_starship.gif")
+                   line_step=self.line_step,
+                   all_aliens=self.all_aliens_dict,
+                   alien_shape="game_resources\\img\\alien_starship.gif")
+
 
 
         # Onkey function
@@ -79,13 +85,12 @@ class SpaceInvadersGame:
         Create alien bullet at the random first row alien. Add to list.
         :return: None
         """
-        number_of_aliens = self.count_all_aliens(self.all_aliens) # Count all aliens for define level of game
-        if len(self.all_aliens) > 0:
+        number_of_aliens = len(self.all_aliens_dict) # Count all aliens for define level of game
+        if len(self.all_aliens_dict) > 0:
             can_strike_aliens = []
-            print(self.alien_fighters_pull) # TEST
             for alien in self.alien_fighters_pull:
-                can_strike_aliens.append(self.all_aliens[alien[0]][alien[1]])
-            print(self.alien_fighters_pull)  # TEST
+                if alien in self.all_aliens_dict:
+                 can_strike_aliens.append(self.all_aliens_dict[alien])
             random_alien = random.choice(can_strike_aliens)
             alien_bullet = AlienBullet(random_alien.xcor(), random_alien.ycor())
             self.alien_bullets.append(alien_bullet)
@@ -117,9 +122,8 @@ class SpaceInvadersGame:
 
     def alien_move(self):
         dx = self.move_list[self.move_index]
-        for rows in self.all_aliens:
-            for alien in rows:
-                alien.setx(alien.xcor() + dx)
+        for alien in self.all_aliens_dict.values():
+              alien.setx(alien.xcor() + dx)
 
         self.move_index += 1
         if self.move_index >= len(self.move_list):
@@ -132,22 +136,24 @@ class SpaceInvadersGame:
 
     def alien_destroy(self):
         for bullet in self.bullets:
-            for row in self.all_aliens:
-                for alien in row:
-                    if bullet.distance(alien) < 20:
-                        # Remove last index alien, avoid index out of range
-                        self.alien_fighters_pull.pop()
-                        if self.all_aliens.index(row) < 5:
-                            # Add new alien from upper line into pull aliens that can strike
-                            self.alien_fighters_pull.insert(0,[self.all_aliens.index(row) + 1, row.index(alien)])
-                        self.bullets.remove(bullet)
-                        alien.shape("game_resources\\img\\explosion.gif")
-                        self.screen.update()
-                        alien.hideturtle()
-                        row.remove(alien)
-                        bullet.hideturtle()
-                if len(row) < 1:
-                    self.all_aliens.remove(row) # Check empty rows without aliens and delete them
+            id_to_delete = [] # List of alien_id. Deleting after iteration through dict to avoid RuntimeError
+            for alien_id, alien in self.all_aliens_dict.items():
+                if bullet.distance(alien) < 20:
+                    # Remove alien_id from alien_fighters_pull
+                    if alien_id in self.alien_fighters_pull:
+                        self.alien_fighters_pull.remove(alien_id)
+                    if alien_id + 12 < 72: # Check last row aliens
+                        self.alien_fighters_pull.append(alien_id + 12)
+                    self.bullets.remove(bullet)
+                    alien.shape("game_resources\\img\\explosion.gif")
+                    self.screen.update()
+                    alien.hideturtle()
+                    id_to_delete.append(alien_id) # Collect all ID to delete
+                    bullet.hideturtle()
+                    self.scoreboard.current_score += 1
+                    self.scoreboard.write_score()
+            for alien_id in id_to_delete:
+                self.all_aliens_dict.pop(alien_id)
         self.screen.ontimer(self.alien_destroy, 1)
 
 
@@ -159,34 +165,21 @@ class SpaceInvadersGame:
                 self.screen.update()
                 self.starship.hideturtle()
                 alien_bullet.hideturtle()
-                print("You LOSE") # TEST
-
+                self.scoreboard.you_lose()
+                self.game_is_on = False
         self.screen.ontimer(self.starship_destroy, 1)
 
 
-    def count_all_aliens(self, lst: list):
-        """
-        Count all items in list including sublist
-        :param lst: List of lists
-        :return: int
-        """
-        count = 0
-        for item in lst:
-            if isinstance(item, list):
-                count += self.count_all_aliens(item)  # recursively count the sublist
-            else:
-                count += 1
-        return count
-
-
     def run(self):
-        self.alien_move()
-        self.alien_bullet_strike()
-        self.player_bullet_strike()
-        self.create_alien_bullet()
-        self.alien_destroy()
-        self.starship_destroy()
-        self.screen.mainloop()
+        if self.game_is_on:
+            self.alien_move()
+            self.alien_bullet_strike()
+            self.player_bullet_strike()
+            self.create_alien_bullet()
+            self.alien_destroy()
+            self.starship_destroy()
+            self.screen.mainloop()
+
 
 
 if __name__ == "__main__":
