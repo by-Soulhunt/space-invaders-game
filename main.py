@@ -1,7 +1,6 @@
-import time
 from turtle import Screen
 from game_resources.starship import Starship
-from game_resources.aliens import Alien, create_all_alien
+from game_resources.aliens import create_all_alien
 from game_resources.player_bullet import PlayerBullet
 from game_resources.alien_bullet import AlienBullet
 import random
@@ -35,7 +34,9 @@ class SpaceInvadersGame:
         # Bullets
         self.bullets = []
         self.alien_bullets = []
-        self.alien_bullets_delay = 5
+        self.alien_bullets_delay = 10
+        self.alien_fighters_pull = [[0,0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6], [0, 7], [0, 8],
+                                    [0, 9], [0, 10], [0, 11]]
 
         # Alien
         self.list_of_alien = []
@@ -58,7 +59,7 @@ class SpaceInvadersGame:
         self.screen.onkeypress(self.starship.move_left, "Left")
         self.screen.onkeypress(self.starship.move_right, "Right")
         self.screen.onkeypress(self.create_player_bullet, "space")
-        self.screen.onkeypress(self.create_alien_bullet, "Up")
+
 
         # Flag
         self.game_is_on = True
@@ -78,13 +79,20 @@ class SpaceInvadersGame:
         Create alien bullet at the random first row alien. Add to list.
         :return: None
         """
+        number_of_aliens = self.count_all_aliens(self.all_aliens) # Count all aliens for define level of game
         if len(self.all_aliens) > 0:
-            first_row = self.all_aliens[0]
-            random_alien = random.choice(first_row)
+            can_strike_aliens = []
+            print(self.alien_fighters_pull) # TEST
+            for alien in self.alien_fighters_pull:
+                can_strike_aliens.append(self.all_aliens[alien[0]][alien[1]])
+            print(self.alien_fighters_pull)  # TEST
+            random_alien = random.choice(can_strike_aliens)
             alien_bullet = AlienBullet(random_alien.xcor(), random_alien.ycor())
             self.alien_bullets.append(alien_bullet)
         else: # TEST
             print("You WIN!") # TEST
+
+        self.screen.ontimer(self.create_alien_bullet, self.alien_bullets_delay * number_of_aliens)
 
 
     def alien_bullet_strike(self):
@@ -127,6 +135,11 @@ class SpaceInvadersGame:
             for row in self.all_aliens:
                 for alien in row:
                     if bullet.distance(alien) < 20:
+                        # Remove last index alien, avoid index out of range
+                        self.alien_fighters_pull.pop()
+                        if self.all_aliens.index(row) < 5:
+                            # Add new alien from upper line into pull aliens that can strike
+                            self.alien_fighters_pull.insert(0,[self.all_aliens.index(row) + 1, row.index(alien)])
                         self.bullets.remove(bullet)
                         alien.shape("game_resources\\img\\explosion.gif")
                         self.screen.update()
@@ -135,15 +148,44 @@ class SpaceInvadersGame:
                         bullet.hideturtle()
                 if len(row) < 1:
                     self.all_aliens.remove(row) # Check empty rows without aliens and delete them
-
-
         self.screen.ontimer(self.alien_destroy, 1)
+
+
+    def starship_destroy(self):
+        for alien_bullet in self.alien_bullets:
+            if alien_bullet.distance(self.starship) < 10:
+                self.alien_bullets.remove(alien_bullet)
+                self.starship.shape("game_resources\\img\\explosion.gif")
+                self.screen.update()
+                self.starship.hideturtle()
+                alien_bullet.hideturtle()
+                print("You LOSE") # TEST
+
+        self.screen.ontimer(self.starship_destroy, 1)
+
+
+    def count_all_aliens(self, lst: list):
+        """
+        Count all items in list including sublist
+        :param lst: List of lists
+        :return: int
+        """
+        count = 0
+        for item in lst:
+            if isinstance(item, list):
+                count += self.count_all_aliens(item)  # recursively count the sublist
+            else:
+                count += 1
+        return count
+
 
     def run(self):
         self.alien_move()
         self.alien_bullet_strike()
         self.player_bullet_strike()
+        self.create_alien_bullet()
         self.alien_destroy()
+        self.starship_destroy()
         self.screen.mainloop()
 
 
