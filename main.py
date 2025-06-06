@@ -29,7 +29,6 @@ class SpaceInvadersGame:
         else:
             print(f"Image not found.")
 
-
         # Scoreboard
         self.scoreboard = Scoreboard()
         self.scoreboard.write_score()
@@ -41,31 +40,26 @@ class SpaceInvadersGame:
         self.bullets = []
         self.alien_bullets = []
         self.alien_bullets_delay = 10
-        self.alien_fighters_pull = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        self.alien_fighters_pull = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] # Starting list of aliens that can attack.
 
         # Alien
-        self.list_of_alien = []
         self.all_aliens_dict = {}
         self.alien_step = 5
         self.line_step = 0
         self.move_list = [-1, -1, -1, -1, 1, 1, 1, 1]
         self.move_index = 0
 
-
-
+        # Create all aliens
         create_all_alien(alien_step=self.alien_step,
                    line_step=self.line_step,
                    all_aliens=self.all_aliens_dict,
                    alien_shape="game_resources\\img\\alien_starship.gif")
-
-
 
         # Onkey function
         self.screen.listen()
         self.screen.onkeypress(self.starship.move_left, "Left")
         self.screen.onkeypress(self.starship.move_right, "Right")
         self.screen.onkeypress(self.create_player_bullet, "space")
-
 
         # Flag
         self.game_is_on = True
@@ -82,11 +76,11 @@ class SpaceInvadersGame:
 
     def create_alien_bullet(self):
         """
-        Create alien bullet at the random first row alien. Add to list.
+        Create alien bullet. Control creation delay. Handle alien strike responsibilities.
         :return: None
         """
         number_of_aliens = len(self.all_aliens_dict) # Count all aliens for define level of game
-        if len(self.all_aliens_dict) > 0:
+        if len(self.all_aliens_dict) > 0: # Check aliens still exist
             can_strike_aliens = []
             for alien in self.alien_fighters_pull:
                 if alien in self.all_aliens_dict:
@@ -94,8 +88,9 @@ class SpaceInvadersGame:
             random_alien = random.choice(can_strike_aliens)
             alien_bullet = AlienBullet(random_alien.xcor(), random_alien.ycor())
             self.alien_bullets.append(alien_bullet)
-        else: # TEST
-            print("You WIN!") # TEST
+        else:
+            self.game_is_on = False
+            self.scoreboard.you_win()
 
         self.screen.ontimer(self.create_alien_bullet, self.alien_bullets_delay * number_of_aliens)
 
@@ -107,7 +102,6 @@ class SpaceInvadersGame:
             if alien_bullet.ycor() < -450:
                 alien_bullet.hideturtle()
                 self.alien_bullets.remove(alien_bullet)
-        self.screen.ontimer(self.alien_bullet_strike, 30)
 
 
     def player_bullet_strike(self):
@@ -117,7 +111,6 @@ class SpaceInvadersGame:
             if bullet.ycor() > 450:
                 bullet.hideturtle()
                 self.bullets.remove(bullet)
-        self.screen.ontimer(self.player_bullet_strike, 30)
 
 
     def alien_move(self):
@@ -131,7 +124,6 @@ class SpaceInvadersGame:
             self.move_list.reverse()
 
         self.screen.update()
-        self.screen.ontimer(self.alien_move, 60)
 
 
     def alien_destroy(self):
@@ -154,12 +146,15 @@ class SpaceInvadersGame:
                     self.scoreboard.write_score()
             for alien_id in id_to_delete:
                 self.all_aliens_dict.pop(alien_id)
-        self.screen.ontimer(self.alien_destroy, 1)
 
 
     def starship_destroy(self):
+        """
+        Check starship destroy
+        :return: None
+        """
         for alien_bullet in self.alien_bullets:
-            if alien_bullet.distance(self.starship) < 10:
+            if alien_bullet.distance(self.starship) < 30:
                 self.alien_bullets.remove(alien_bullet)
                 self.starship.shape("game_resources\\img\\explosion.gif")
                 self.screen.update()
@@ -167,18 +162,27 @@ class SpaceInvadersGame:
                 alien_bullet.hideturtle()
                 self.scoreboard.you_lose()
                 self.game_is_on = False
-        self.screen.ontimer(self.starship_destroy, 1)
 
 
-    def run(self):
+    def game_loop(self):
+        """
+        Main game loop onclick
+        :return: None
+        """
         if self.game_is_on:
             self.alien_move()
             self.alien_bullet_strike()
             self.player_bullet_strike()
-            self.create_alien_bullet()
             self.alien_destroy()
             self.starship_destroy()
-            self.screen.mainloop()
+
+            self.screen.ontimer(self.game_loop, 30)
+
+
+    def run(self):
+        self.game_loop()
+        self.create_alien_bullet() # Separate method to control bullet creation delay
+        self.screen.mainloop()
 
 
 
