@@ -16,12 +16,12 @@ class Starship(Turtle):
     def move_right(self):
         x = self.xcor()
         if x < 420:
-            x += 15
+            x += 10
             self.setx(x)
 
 
     def move_left(self):
         x = self.xcor()
         if x > -420:
-            x += -15
+            x += -10
             self.setx(x)

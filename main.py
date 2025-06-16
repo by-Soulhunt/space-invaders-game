@@ -130,7 +130,7 @@ class SpaceInvadersGame:
         for bullet in self.bullets:
             id_to_delete = [] # List of alien_id. Deleting after iteration through dict to avoid RuntimeError
             for alien_id, alien in self.all_aliens_dict.items():
-                if bullet.distance(alien) < 20:
+                if bullet.distance(alien) < 22:
                     # Remove alien_id from alien_fighters_pull
                     if alien_id in self.alien_fighters_pull:
                         self.alien_fighters_pull.remove(alien_id)
@@ -154,7 +154,7 @@ class SpaceInvadersGame:
         :return: None
         """
         for alien_bullet in self.alien_bullets:
-            if alien_bullet.distance(self.starship) < 30:
+            if alien_bullet.distance(self.starship) < 32:
                 self.alien_bullets.remove(alien_bullet)
                 self.starship.shape("game_resources\\img\\explosion.gif")
                 self.screen.update()
